@@ -1,0 +1,24 @@
+#!/bin/bash
+
+CHP=atmega8515
+FLASH=0
+
+if [ "x$1" == "xflash" ]; then
+FLASH=1
+shift
+fi
+
+if [ "x$1" != "x" ]; then
+CHP=$1
+shift
+fi
+
+avr-gcc -Wall -Os -mmcu=$CHP -c main.c -o main.o
+avr-gcc -Wall -Os -mmcu=$CHP -o main.elf main.o
+rm -f main.hex
+avr-objcopy -j .text -j .data -O ihex main.elf main.hex
+
+if [ $FLASH == 1 ]; then
+avrdude -c USBasp -e -p $CHP -U flash:w:main.hex:i hfuse:w:0xD1:m -U lfuse:w:0x6E:m
+fi
+
