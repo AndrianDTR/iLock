@@ -106,9 +106,8 @@
       </Completion>
     </Configuration>
   </Settings>
-  <VirtualDirectory Name="tmp">
+  <VirtualDirectory Name="src">
     <File Name="make"/>
     <File Name="main.c"/>
-    <File Name="aaa.txt"/>
   </VirtualDirectory>
 </CodeLite_Project>
