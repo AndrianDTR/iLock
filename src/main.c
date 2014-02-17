@@ -239,14 +239,14 @@ void KBDParse()
 
 #define	RF_PULSE_PIN			0
 #define	RF_PULSE_TOGGLE()		(PORTB ^= (1 << RF_PULSE_PIN))
+#define RF_DEMOD				(PIND & (1 << PIND6))
 
 #define ARRAYSIZE 256
 
 char* begin; 
-volatile int iter;      // the iterator for the placement of count in the array
-volatile int count;     // counts 125kHz pulses
-volatile int lastpulse; // last value of DEMOD_OUT
-volatile int on;        // stores the value of DEMOD_OUT in the interrupt
+volatile int count;			// counts 125kHz pulses
+volatile int count_1;		// counter 1 on DEMOD_OUT during 125kHz pulses
+
 /************************* CONVERT RAW DATA TO BINARY *************************\
 | Converts the raw 'pulse per wave' count (5,6,or 7) to binary data (0, or 1)  |
 \******************************************************************************/
@@ -465,23 +465,12 @@ void analizeInput (void)
 
 ISR(TIMER0_COMP_vect)
 {
-	//Save the value of DEMOD_OUT to prevent re-reading on the same group
-	on = ((PIND & (1<<PIND6)) != 0);
-	
-	// if wave is rising (end of the last wave)
-	if(on != lastpulse)
+	//increment 
+	if((PIND & (1 << PIND6)) != 0)
 	{
-		//printf("X4\n");
-		begin[++iter] = count; 
-		// write the data to the array and reset the count
-		count = 0;
-		begin[iter] = 0;
+		++count_1;
 	}
-	//*/
-	
 	++count;
-	lastpulse = on;
-	//*/
 }
 
 void RFIDReset()
@@ -490,7 +479,7 @@ void RFIDReset()
 	
 	//reset the saved values to prevent errors when reading another card
 	count = 0;
-	iter = 0;
+	count_1 = 0;
 	
 	for (i = 0; i < ARRAYSIZE; ++i)
 	{
@@ -512,12 +501,77 @@ void RFIDInit()
 	RFIDReset();
 }
 
+#define		RS_NONE			0
+#define		RS_SYNC			1
+#define		RS_FIND			2
+#define		RS_SHORT		3
+#define		RS_LONG			4
+#define		RS_PREAMB		5
+
+int rfState;
+
+void StateMachine()
+{
+	
+	
+	printf("SM enter: %i\n", rfState);
+	
+	switch(rfState)
+	{
+		case RS_SYNC:
+		{
+			printf("SM_SYNC.\n");
+			KBDParse();
+			
+			count = count_1 = 0;
+			
+			if(RF_DEMOD == 1)
+				rfState = RS_FIND;
+				
+			break;
+		}
+		
+		case RS_FIND:
+		{
+			printf("SM_FIND.\n");
+			
+			if(RF_DEMOD == 0)
+				rfState = RS_SHORT;
+			
+			break;
+		}
+		
+		case RS_SHORT:
+		{
+			printf("SM_SHORT.\n");
+			
+			break;
+		}
+		
+		case RS_LONG:
+		{
+			printf("SM_LONG.\n");
+			
+			break;
+		}
+		
+		case RS_PREAMB:
+		{
+			printf("SM_PREAMB.\n");
+			
+			break;
+		}
+	}
+	printf("SM Leave: %i.\n", rfState);
+}
+
 int main(void) 
 {
 	int i;
-	iter = 0;
 	count = 0;
+	count_1 = 0;
 
+	printf("Ax1\n");
 	USARTInit();
  
 	DDRB = 0xFF;
@@ -534,28 +588,12 @@ int main(void)
 	
 	sei(); // Enable global interrupts 
 	
+	rfState = RS_SYNC;
+	
 	printf("A1\n");
 	while(1) 
 	{
-		KBDParse();
-		
-		//printf("A2: I:%i, C:%i\n", iter, count);
-		// while the card is being read
-		if(iter >= ARRAYSIZE)
-		{
-			printf("A3 %i \n", iter);
-			// if the buffer is full
-			//cli(); // disable interrupts
-			//analizeInput();
-			RFIDReset();
-		}
-				
-		//printf("A4\n");
-		//
-		
-		//sei();
-		
-		//*/
+		StateMachine();
 	} 
 	printf("A0\n");
 	
