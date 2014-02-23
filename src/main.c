@@ -2,7 +2,6 @@
 #include <avr/interrupt.h> 
 
 #define F_CPU				18432200UL
-#define T0CNT_PRELOAD_125	10
 
 #include <util/delay.h> 
 #include <stdio.h>
@@ -28,7 +27,7 @@
 #define BEEP_LONG()				BUZ_SET(); _delay_ms(200); BUZ_CLR();
 
 /******************************************************************************/
-#define USART_BAUDRATE 			19200UL 
+#define USART_BAUDRATE 			115200UL 
 #define BAUD_PRESCALE 			(((F_CPU / (USART_BAUDRATE * 16UL))) - 1) 
 
 #define USART_MAX_BUFLEN		25
@@ -250,31 +249,17 @@ void KBDParse()
 }
 
 /*******************************************************************************/
-
-#define	RF_PULSE_PIN			0
-#define	RF_PULSE_TOGGLE()		(PORTB ^= (1 << RF_PULSE_PIN))
 #define RF_DEMOD				((PIND & (1<<PIND6)) != 0)
-int		_DEMOD;
 
+volatile unsigned char count;					// counts 125kHz pulses
+volatile unsigned char bitCnt;		// read bits counter
+
+
+/*
 #define ARRAYSIZE 256
-
-char* begin; 
-volatile int count;			// counts 125kHz pulses
-volatile int count_1;		// counter 1 on DEMOD_OUT during 125kHz pulses
-
-int pinD6()
-{
-	int D = RF_DEMOD;
-	_delay_us(10);
-	if(D == RF_DEMOD)
-		return D;
-	else
-		return 0;
-}
-
-/************************* CONVERT RAW DATA TO BINARY *************************\
-| Converts the raw 'pulse per wave' count (5,6,or 7) to binary data (0, or 1)  |
-\******************************************************************************/
+//************************* CONVERT RAW DATA TO BINARY *************************
+// Converts the raw 'pulse per wave' count (5,6,or 7) to binary data (0, or 1)  
+//******************************************************************************
 void convertRawDataToBinary(char* buffer)
 {
 	int i;
@@ -306,11 +291,11 @@ void convertRawDataToBinary(char* buffer)
 	printf("C0\n");
 }
 
-/******************************* FIND START TAG *******************************\
-| This function goes through the buffer and tries to find a group of fifteen   |
-| or more 1's in a row. This sigifies the start tag. If you took the fifteen   |
-| ones in multibit they would come out to be '111' in single-bit               |
-\******************************************************************************/
+//******************************* FIND START TAG *******************************
+// This function goes through the buffer and tries to find a group of fifteen   
+// or more 1's in a row. This sigifies the start tag. If you took the fifteen   
+// ones in multibit they would come out to be '111' in single-bit               
+//******************************************************************************
 int findStartTag (char * buffer)
 {
 	int i;
@@ -340,11 +325,11 @@ int findStartTag (char * buffer)
 	return i;
 }
 
-/************************ PARSE MULTIBIT TO SINGLE BIT ************************\
-| This function takes in the start tag and starts parsing the multi-bit code   |
-| to produce the single bit result in the outputBuffer array the resulting     |
-| code is single bit manchester code                                           |
-\******************************************************************************/
+//************************ PARSE MULTIBIT TO SINGLE BIT ************************
+// This function takes in the start tag and starts parsing the multi-bit code   
+// to produce the single bit result in the outputBuffer array the resulting     
+// code is single bit manchester code                                           
+//******************************************************************************
 void parseMultiBitToSingleBit (char * buffer, int startOffset, int outputBuffer[]) 
 {
 	int i = startOffset; // the offset value of the start tag
@@ -393,15 +378,15 @@ void parseMultiBitToSingleBit (char * buffer, int startOffset, int outputBuffer[
 	}
 }
 
-/******************************* Analize Input *******************************\
-| analizeInput(void) parses through the global variable and gets the 45 bit   |
-| id tag.                                                                     |
-| 1) Converts raw pulse per wave count (5,6,7) to binary data (0,1)           |
-| 2) Finds a start tag in the code                                            |
-| 3) Parses the data from multibit code (11111000000000000111111111100000) to |
-|     singlebit manchester code (100110) untill it finds an end tag           |
-| 4) Converts manchester code (100110) to binary code (010)                   |
-\*****************************************************************************/
+//******************************* Analize Input ********************************
+// analizeInput(void) parses through the global variable and gets the 45 bit    
+// id tag.                                                                      
+// 1) Converts raw pulse per wave count (5,6,7) to binary data (0,1)            
+// 2) Finds a start tag in the code                                             
+// 3) Parses the data from multibit code (11111000000000000111111111100000) to  
+//     singlebit manchester code (100110) untill it finds an end tag            
+// 4) Converts manchester code (100110) to binary code (010)                    
+//******************************************************************************
 void analizeInput (void) 
 {
 	printf("B1\n");
@@ -487,22 +472,11 @@ void analizeInput (void)
 	#endif
 	printf("B0\n");
 }
+//******************************************************************************/
 
 ISR(TIMER0_COMP_vect)
 {
-	//increment 
-	if(_DEMOD)
-	{
-		++count_1;
-	}
 	++count;
-}
-
-void RFIDReset()
-{
-	//reset the saved values to prevent errors when reading another card
-	count = 0;
-	count_1 = 0;
 }
 
 void RFIDInit()
@@ -514,14 +488,227 @@ void RFIDInit()
 	OCR0 = 73; // Preload timer with precalculated value 
 }
 
+#define BITBUF_LEN 180
+unsigned char bitBuf[BITBUF_LEN];
+
+char RFIDReadTag(unsigned char* p)
+{
+	char res = 0;
+	unsigned char cikl = 60;
+	unsigned char readState = 0;
+	
+	do{
+		switch(readState)
+		{
+			//loop3
+			case 0:
+				count = 0;
+				readState = 1;
+			//vysok
+			case 1:
+				if(count < 70)
+				{
+					if(RF_DEMOD)
+						break;
+					*p++ = 2;
+					readState = 3;
+				}
+			//met11
+			case 2:
+				if(count >= 130)
+				{
+					res = -1;
+					break;
+				}
+				if(RF_DEMOD)
+					break;
+				*p++ = 3;
+			//nizk
+			case 3:
+				count = 0;
+				readState = 4;
+			//loop4
+			case 4:
+				if(count < 70)
+				{
+					if(!RF_DEMOD)
+						break;
+					*p++ = 1;
+					readState = 6;
+					break;
+				}
+				readState = 5;
+			//met10
+			case 5:
+				if(count >= 130)
+				{
+					res = -1;
+					break;
+				}
+				if(!RF_DEMOD)
+					break;
+				*p++ = 0;
+			case 6:
+				--cikl;
+				if(cikl)
+				{
+					readState = 0;
+					break;
+				}
+			default:
+				res = 1;
+		}
+	}while(!res);
+	
+	return res;
+}
+
+unsigned char nibbleSwap(unsigned char a) 
+{ 
+	return (a<<4) | (a>>4); 
+} 
+
+char RFIDDecode(unsigned char* pp)
+{
+	char res = 0;
+	unsigned char* p = pp;
+	unsigned char nibble = 2;
+	bitCnt = 128;
+	
+	const unsigned char DBL = BITBUF_LEN/2 + 3;
+	unsigned char decBuf[DBL];
+	unsigned char* d = decBuf;
+	unsigned char i = 0;
+	for(; i < DBL; ++i) decBuf[i] = 0;
+	for(; i < BITBUF_LEN; ++i) p[i] = 0;
+	
+	unsigned char system = 0;
+	unsigned char data = 0;
+	unsigned char temp = 0;
+	
+	do{
+		switch(*p++)
+		{
+			//byt0_0
+			case 0:
+				system <<= 1;
+				temp = (temp << 1)|1;
+			
+			//byt0
+			case 1:
+				system <<= 1;
+				temp = (temp << 1)|1;
+				break;
+			
+			//byt1
+			case 2:
+				system = (system << 1)|1;
+				temp = (temp << 1)|1;
+			
+			//byt1_1
+			case 3:
+				system = (system << 1)|1;
+				temp = (temp << 1)|1;
+				break;
+		}
+		
+		if(temp & 0x10)
+		{
+			unsigned char x = system;
+			x &= 0x1E;
+			x >>= 1;
+			
+			if(--nibble)
+			{
+				data = x << 4;
+			}
+			else
+			{
+				data |= x;
+				*d++ = data;
+				nibble = 2;
+			}
+			system &= 1;
+			temp = 1;
+		}
+	}while(--bitCnt);
+
+	bitCnt = 15;
+	p = pp;
+	d = decBuf;
+	do
+	{
+		system = 0;
+		nibble = 2;
+		do
+		{
+			data = *d++;
+			if((data & 0x80) == 0x80)
+				system <<= 1;
+			else
+				system = (system << 1)| 1;
+			if((data & 0x20) == 0x20)
+				system <<= 1;
+			else
+				system = (system << 1)| 1;
+			if((data & 0x08) == 0x08)
+				system <<= 1;
+			else
+				system = (system << 1)| 1;
+			if((data & 0x02) == 0x02)
+				system <<= 1;
+			else
+				system = (system << 1)| 1;
+			
+			if(!--bitCnt) break;
+	
+		}while(--nibble);
+		*p++ = system;
+	}while(!bitCnt);
+	
+	d = decBuf;
+	p = pp;
+	bitCnt = 6;
+	data = 0xFF;
+	*d++ = data;
+	data = *p++;
+	system = 0xFE & data;
+	system >>= 1;
+	system |= 128;
+	
+	do
+	{
+		*d++ = system;
+		system = *p++;
+		data &= 1;
+		data = nibbleSwap(data) << 3;
+		
+		system &= 0xFE;
+	}while(--bitCnt);
+	
+	/*
+	printf("DECODE: ");
+	for(i=0; i < BITBUF_LEN; ++i)
+	{
+		printf("%c", '0'+pp[i]);
+	}
+	printf("\n");
+	//*/
+	return res;
+}
+
 #define		RS_NONE			0
 #define		RS_SYNC			1
 #define		RS_FIND			2
 #define		RS_SHORT		3
 #define		RS_LONG			4
 #define		RS_PREAMB		5
+#define		RS_HEADER		6
+#define		RS_BIT1			7
+#define		RS_DECODE		8
+#define		RS_DECODE1		9
 
-int rfState;
+unsigned char rfState;
 
 void StateMachine()
 {
@@ -529,9 +716,9 @@ void StateMachine()
 	{
 		case RS_SYNC:
 		{
+			bitCnt = 0;
 			KBDParse();
-			
-			if(pinD6())
+			if(RF_DEMOD)
 			{
 				rfState = RS_FIND;
 			}
@@ -541,10 +728,10 @@ void StateMachine()
 		
 		case RS_FIND:
 		{
-			if(!pinD6())
+			if(!RF_DEMOD)
 			{
 				rfState = RS_SHORT;
-				RFIDReset();
+				count = 0;;
 			}
 			
 			break;
@@ -552,7 +739,7 @@ void StateMachine()
 		
 		case RS_SHORT:
 		{
-			if(count == count_1 && count < 65)
+			if(count < 65)
 			{
 				rfState = RS_LONG;
 			}
@@ -566,58 +753,114 @@ void StateMachine()
 		
 		case RS_LONG:
 		{
-			//printf("SM_LONG.\n");
-			
-			if(1==1)
-			{
-				printf("SM_LONG.\n");
-			}
-			else
+			if(count > 140)
 			{
 				rfState = RS_SYNC;
-				RFIDReset();
 			}
-			//*/
+			else if(RF_DEMOD)
+			{
+				rfState = RS_PREAMB;
+				count = 0;
+			}
+			
 			break;
 		}
 		
 		case RS_PREAMB:
 		{
-			printf("SM_PREAMB.\n");
+			if(count >= 70)
+				rfState = RS_BIT1;
+			else if(!RF_DEMOD)
+				rfState = RS_SYNC;
 			
 			break;
+		}
+		case RS_BIT1:
+		{
+			if(RF_DEMOD)
+			{
+				rfState = RS_HEADER;
+				count = 0;
+			}
+			break;
+		}
+		case RS_HEADER:
+		{
+			if(count >= 70)
+			{
+				rfState = RS_LONG;
+				count = 0;
+			}
+			else if(RF_DEMOD)
+			{
+				++bitCnt;
+			}
+			if(bitCnt == 9)
+			{
+				int res = RFIDReadTag(bitBuf); 
+				
+				if(1 == res) 		rfState = RS_DECODE;
+				else if(-1 == res)	rfState = RS_SYNC;
+			}
+			else
+			{
+				rfState = RS_BIT1;
+			}
+			break;
+		}
+		case RS_DECODE:
+		{
+			RFIDDecode(bitBuf);
+			unsigned char i;
+			for(i = 0; i < BITBUF_LEN; ++i)
+			{
+				bitBuf[i] = 0;
+			}
+			
+			rfState = RS_SYNC;
+		}
+		case RS_DECODE1:
+		{
+			
 		}
 	}
 	//printf("SM Leave %i == %i.\n", count, count_1);
 }
 
-int main(void) 
+void init()
 {
-	int i;
-	count = 0;
-	count_1 = 0;
-	rfState = RS_SYNC;
-
 	DDRB = 0xFF;
 	PORTB = 0xFF;
 	DDRD = 0x3F;
 	PORTD = 0x00;
-	
+
 	USARTInit();
 
+	count = 0;
+	bitCnt = 0;
+	rfState = RS_SYNC;
+	
+	RFIDInit();
+	
 	LED_OK_CLR();
 	LED_POWER_CLR();
 	RELAY_CLR();
 	BUZ_CLR();
 	
-	RFIDInit();
+	unsigned char i = 0;
+	for(;i < BITBUF_LEN; ++i)
+		bitBuf[i] = 0;
+}
+
+int main(void) 
+{
+	init();
 	
 	sei(); // Enable global interrupts 
 	
 	printf("A1\n");
 	while(1) 
 	{
-		_DEMOD = pinD6();
 		StateMachine();
 		_delay_us(2);
 	} 
@@ -626,6 +869,7 @@ int main(void)
 	while(1)
 	{
 		printf("ERROR\n");
+		_delay_ms(200);
 	}
 } 
 
