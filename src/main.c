@@ -488,7 +488,7 @@ void RFIDInit()
 	OCR0 = 73; // Preload timer with precalculated value 
 }
 
-#define BITBUF_LEN 180
+#define BITBUF_LEN 140
 unsigned char bitBuf[BITBUF_LEN];
 
 char RFIDReadTag(unsigned char* p)
@@ -496,6 +496,7 @@ char RFIDReadTag(unsigned char* p)
 	char res = 0;
 	unsigned char cikl = 60;
 	unsigned char readState = 0;
+	unsigned char i;
 	
 	do{
 		switch(readState)
@@ -504,6 +505,7 @@ char RFIDReadTag(unsigned char* p)
 			case 0:
 				count = 0;
 				readState = 1;
+				break;
 			//vysok
 			case 1:
 				if(count < 70)
@@ -513,23 +515,27 @@ char RFIDReadTag(unsigned char* p)
 					*p++ = 2;
 					readState = 3;
 				}
-			//met11
-			case 2:
-				if(count >= 130)
+				else if(count >= 130)
 				{
 					res = -1;
 					break;
 				}
-				if(RF_DEMOD)
-					break;
-				*p++ = 3;
+				else
+				{
+					if(RF_DEMOD)
+						break;
+					*p++ = 3;
+					readState = 6;
+				}
+				break;
 			//nizk
 			case 3:
 				count = 0;
 				readState = 4;
+				break;
 			//loop4
 			case 4:
-				if(count < 70)
+				if(count > 70)
 				{
 					if(!RF_DEMOD)
 						break;
@@ -537,29 +543,32 @@ char RFIDReadTag(unsigned char* p)
 					readState = 6;
 					break;
 				}
-				readState = 5;
-			//met10
-			case 5:
-				if(count >= 130)
+				else if(count >= 130)
 				{
 					res = -1;
 					break;
 				}
-				if(!RF_DEMOD)
-					break;
-				*p++ = 0;
+				else
+				{
+					if(!RF_DEMOD)
+						break;
+					*p++ = 0;
+					readState = 6;
+				}
+				
+				break;
 			case 6:
 				--cikl;
-				if(cikl)
-				{
-					readState = 0;
-					break;
-				}
+				if(cikl) readState = 0;
+				break;
 			default:
 				res = 1;
 		}
 	}while(!res);
 	
+	printf("AAA: ");
+	for(i = 0; i < BITBUF_LEN-1; ++i) printf("%c", '0'+bitBuf[i]);
+	printf("\n");
 	return res;
 }
 
@@ -573,14 +582,14 @@ char RFIDDecode(unsigned char* pp)
 	char res = 0;
 	unsigned char* p = pp;
 	unsigned char nibble = 2;
-	bitCnt = 128;
+	bitCnt = 200;
 	
 	const unsigned char DBL = BITBUF_LEN/2 + 3;
 	unsigned char decBuf[DBL];
 	unsigned char* d = decBuf;
-	unsigned char i = 0;
-	for(; i < DBL; ++i) decBuf[i] = 0;
-	for(; i < BITBUF_LEN; ++i) p[i] = 0;
+	unsigned char i;
+	for(i = 0; i < DBL; ++i) decBuf[i] = 0;
+	for(i = 0; i < BITBUF_LEN; ++i) p[i] = 0;
 	
 	unsigned char system = 0;
 	unsigned char data = 0;
@@ -680,17 +689,17 @@ char RFIDDecode(unsigned char* pp)
 	{
 		*d++ = system;
 		system = *p++;
-		data &= 1;
-		data = nibbleSwap(data) << 3;
-		
-		system &= 0xFE;
+		data = nibbleSwap(data & 1) << 3;
+		temp = ((system & 0xFE) << 1) | data;
+		data = system;
+		system = temp;
 	}while(--bitCnt);
+	*d++ = system;
 	
-	/*
 	printf("DECODE: ");
-	for(i=0; i < BITBUF_LEN; ++i)
+	for(i=0; i < DBL/2; ++i)
 	{
-		printf("%c", '0'+pp[i]);
+		printf("%02X ", decBuf[i]);
 	}
 	printf("\n");
 	//*/
