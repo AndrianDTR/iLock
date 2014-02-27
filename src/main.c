@@ -488,8 +488,33 @@ void RFIDInit()
 	OCR0 = 73; // Preload timer with precalculated value 
 }
 
+#define	RFID_SHORT		130
+#define	RFID_LONG		260
+
 #define BITBUF_LEN 140
 unsigned char bitBuf[BITBUF_LEN];
+
+/*
+ * Read bit from RFID tag
+ * 
+ * @return 	read bit value or -1 if timeout is exceeded.
+ *
+ */
+int FRIDGetBit()
+{
+	int value = RF_DEMOD;
+	count = 0;
+
+	do
+	{
+		if(count > RFID_SHORT and value != RF_DEMOD)
+			return value == 1;
+		else if(count > RFID_LONG)
+			break;
+	}while(1);
+
+	return -1;
+}
 
 char RFIDReadTag(unsigned char* p)
 {
@@ -725,13 +750,13 @@ void StateMachine()
 	{
 		case RS_SYNC:
 		{
-			bitCnt = 0;
 			KBDParse();
+			bitCnt = 0;
 			if(RF_DEMOD)
 			{
 				rfState = RS_FIND;
 			}
-			
+		
 			break;
 		}
 		
@@ -740,44 +765,43 @@ void StateMachine()
 			if(!RF_DEMOD)
 			{
 				rfState = RS_SHORT;
-				count = 0;;
 			}
-			
+			count = 0;
 			break;
 		}
 		
 		case RS_SHORT:
 		{
-			if(count < 65)
+			if(count > RFID_SHORT)
 			{
-				rfState = RS_LONG;
+				if(!RF_DEMOD)
+					rfState = RS_LONG;
+				else
+					rfState = RS_SYNC;
 			}
-			else
-			{
-				rfState = RS_SYNC;
-			}	
 			
 			break;
 		}
 		
 		case RS_LONG:
 		{
-			if(count > 140)
+			if(count < RFID_LONG)
 			{
+				if(RF_DEMOD)
+				{
+					rfState = RS_PREAMB;
+					count = 0;
+				}
+			}
+			else
 				rfState = RS_SYNC;
-			}
-			else if(RF_DEMOD)
-			{
-				rfState = RS_PREAMB;
-				count = 0;
-			}
 			
 			break;
 		}
 		
 		case RS_PREAMB:
 		{
-			if(count >= 70)
+			if(count > RFID_SHORT)
 				rfState = RS_BIT1;
 			else if(!RF_DEMOD)
 				rfState = RS_SYNC;
