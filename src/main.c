@@ -249,10 +249,11 @@ void KBDParse()
 }
 
 /*******************************************************************************/
-#define RFID_BIT_LEN			64
+#define RFID_BIT_LEN			32
 #define	RFID_SHORT				(RFID_BIT_LEN + 1) * 2
 #define	RFID_LONG				RFID_SHORT * 2
 
+#define RF_HEADER_BITCNT		9
 #define RF_READ_ERROR			-1
 #define RF_DEMOD				((PIND & (1<<PIND6)) != 0)
 
@@ -325,20 +326,27 @@ void RFIDInit()
  * @return 	int, read bit value or -1 if timeout is exceeded.
  *
  */
-int FRIDGetBit()
+int RFIDGetBit()
 {
 	int value = RF_DEMOD;
 	count = 0;
 
 	do
 	{
-		if(count > RFID_SHORT and value != RF_DEMOD)
-			return value == 0;
-		else if(count > RFID_LONG)
+		if(count > RFID_SHORT && value != RF_DEMOD)
+		{
+			value = (value == 0);
 			break;
+		}
+		else if(count > RFID_LONG)
+		{
+			value = -1;
+			break;
+		}
 	}while(1);
-
-	return -1;
+	
+	//printf("%c", '0'+value);
+	return value;
 }
 
 char RFIDReadTag(unsigned char* p)
@@ -629,7 +637,7 @@ void StateMachine()
 			if(RF_READ_ERROR != bit)
 				bitBuf[bitCnt++] = bit;
 			
-			if(128 == bitCnt)
+			if(BITBUF_LEN == bitCnt)
 				rfState = RS_DECODE;
 			
 			break;
@@ -637,14 +645,16 @@ void StateMachine()
 		
 		case RS_DECODE:
 		{
-			RFIDDecode(bitBuf);
+			//RFIDDecode(bitBuf);
 			
+			printf("READED: ");
 			unsigned char i;
 			for(i = 0; i < BITBUF_LEN; ++i)
 			{
+				printf("%c", '0'+bitBuf[i]);
 				bitBuf[i] = 0;
 			}
-			
+			printf("\n");
 			rfState = RS_SYNC;
 		}
 
