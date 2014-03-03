@@ -2,24 +2,24 @@
 ;##             Reader_RFID                  ##
 ;##                                          ##
 ;##############################################
-; 8.0 MZh int osc  , без делителя на 8, BODLEVEL- 2.7v.
-; * Используется внешний компаратор и усилитель на LM358
-; В реализации проекта участвуют:
+; 8.0 MZh int osc  , Р±РµР· РґРµР»РёС‚РµР»СЏ РЅР° 8, BODLEVEL- 2.7v.
+; * РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РІРЅРµС€РЅРёР№ РєРѕРјРїР°СЂР°С‚РѕСЂ Рё СѓСЃРёР»РёС‚РµР»СЊ РЅР° LM358
+; Р’ СЂРµР°Р»РёР·Р°С†РёРё РїСЂРѕРµРєС‚Р° СѓС‡Р°СЃС‚РІСѓСЋС‚:
 ; PB0- bipper
-; PB1- приём импульсов корпоратора(детектора сигнала rfid)
-; PB2- выход сигнала 125 КГц, для запитки антены (на прерываниях по таймеру 0) 
-; PD0- кнопка для включения команды чтения кода ключа RFID и занесение в ячейку EEPROM по адресу 80Н
+; PB1- РїСЂРёС‘Рј РёРјРїСѓР»СЊСЃРѕРІ РєРѕСЂРїРѕСЂР°С‚РѕСЂР°(РґРµС‚РµРєС‚РѕСЂР° СЃРёРіРЅР°Р»Р° rfid)
+; PB2- РІС‹С…РѕРґ СЃРёРіРЅР°Р»Р° 125 РљР“С†, РґР»СЏ Р·Р°РїРёС‚РєРё Р°РЅС‚РµРЅС‹ (РЅР° РїСЂРµСЂС‹РІР°РЅРёСЏС… РїРѕ С‚Р°Р№РјРµСЂСѓ 0) 
+; PD0- РєРЅРѕРїРєР° РґР»СЏ РІРєР»СЋС‡РµРЅРёСЏ РєРѕРјР°РЅРґС‹ С‡С‚РµРЅРёСЏ РєРѕРґР° РєР»СЋС‡Р° RFID Рё Р·Р°РЅРµСЃРµРЅРёРµ РІ СЏС‡РµР№РєСѓ EEPROM РїРѕ Р°РґСЂРµСЃСѓ 80Рќ
 ;-------------------------------------------------
 
-.include "tn2313def.inc"				; Присоединение файла описаний
-.list							; Включение листинга
+.include "tn2313def.inc"		; РџСЂРёСЃРѕРµРґРёРЅРµРЅРёРµ С„Р°Р№Р»Р° РѕРїРёСЃР°РЅРёР№
+.list							; Р’РєР»СЋС‡РµРЅРёРµ Р»РёСЃС‚РёРЅРіР°
 
 ;------------------------------------------------
-.cseg 							; Выбор сегмента программного кода
-.org 	0						; Устанеовка текущего адреса на ноль
+.cseg 							; Р’С‹Р±РѕСЂ СЃРµРіРјРµРЅС‚Р° РїСЂРѕРіСЂР°РјРјРЅРѕРіРѕ РєРѕРґР°
+.org 	0						; РЈСЃС‚Р°РЅРµРѕРІРєР° С‚РµРєСѓС‰РµРіРѕ Р°РґСЂРµСЃР° РЅР° РЅРѕР»СЊ
 
 ;------------------------------------------------
-.def	S		=R0
+.def	S			=R0
 .def	temp		=R16
 .def	timerL		=R17
 .def	system	  	=R18
@@ -29,28 +29,28 @@
 .def	addr		=R22
 .def	data		=R23
 
-.equ	INPUT		=1				; PB1 - вход от компаратора
+.equ	INPUT		=1			; PB1 - РІС…РѕРґ РѕС‚ РєРѕРјРїР°СЂР°С‚РѕСЂР°
 ;-------------------------------------------------
 
-rjmp	start		 
-rjmp	m1	 
-rjmp	m2	 
-rjmp	m3	 
-rjmp	m4	 
-rjmp	m5 
-rjmp	m6	 
-rjmp	m7	 
-rjmp	m8	 
-rjmp	m9	 
-rjmp	m10
-rjmp	m11
-rjmp	m12
-rjmp	OC0Aaddrs
-rjmp	m14	 
-rjmp	m15	
-rjmp	m16	
-rjmp	m17	
-rjmp	m19	
+rjmp		start
+rjmp		m1	 
+rjmp		m2	 
+rjmp		m3	 
+rjmp		m4	 
+rjmp		m5 
+rjmp		m6	 
+rjmp		m7	 
+rjmp		m8	 
+rjmp		m9	 
+rjmp		m10
+rjmp		m11
+rjmp		m12
+rjmp		OC0Aaddrs
+rjmp		m14	 
+rjmp		m15	
+rjmp		m16	
+rjmp		m17	
+rjmp		m19	
 
 ;-------------------------------------------------
 m1:			reti
@@ -62,370 +62,370 @@ m6:			reti
 m7:			reti
 m8:			reti
 m9:			reti
-m10:			reti
-m11:			reti
-m12:			reti
+m10:		reti
+m11:		reti
+m12:		reti
 	 
-m14:			reti
-m15:			reti
-m16:			reti
-m17:			reti
-m18:			reti
-m19:			reti
+m14:		reti
+m15:		reti
+m16:		reti
+m17:		reti
+m18:		reti
+m19:		reti
 
 ;-------------------------------------------------
-start:			ldi temp,low(RAMEND)
-			out SPL,temp
+start:		ldi 	temp,low(RAMEND)
+			out 	SPL,temp
 
 ;-------------------------------------------------
-			ldi 	temp, 0x80		; Выключение компаратора
-			out	ACSR, temp              
+			ldi		temp, 0x80		; Р’С‹РєР»СЋС‡РµРЅРёРµ РєРѕРјРїР°СЂР°С‚РѕСЂР°
+			out		ACSR, temp              
 
 ;-------------------------------------------------
-			ldi	temp,0b11111101		; линия РВ1 на ввод остальные на вывод
+			ldi		temp,0b11111101	; Р»РёРЅРёСЏ Р Р’1 РЅР° РІРІРѕРґ РѕСЃС‚Р°Р»СЊРЅС‹Рµ РЅР° РІС‹РІРѕРґ
 			out 	DDRB,temp
-			ldi	temp,0	
-			out	PORTB,temp	 
-			out	DDRD,temp		; Все линии порта D на ввод
-			ldi	temp,255
-			out	PORTD,temp		; подключение резисторов подтяжки 
+			ldi		temp,0	
+			out		PORTB,temp	 
+			out		DDRD,temp		; Р’СЃРµ Р»РёРЅРёРё РїРѕСЂС‚Р° D РЅР° РІРІРѕРґ
+			ldi		temp,255
+			out		PORTD,temp		; РїРѕРґРєР»СЋС‡РµРЅРёРµ СЂРµР·РёСЃС‚РѕСЂРѕРІ РїРѕРґС‚СЏР¶РєРё 
 
 ;-------------------------------------------------
 ; Timer0 OC0A
 ;-------------------------------------------------
-			ldi	temp,0b01000010		; 0b01000010	
-			out	TCCR0A,temp
-			ldi	temp,0b10000001		; 0b10000001	
-			out	TCCR0B,temp		; запуск счётчика
-			ldi	temp,0b00000000
-			out	TCNT0,temp		; Загрузка счётного регистра
-			ldi	temp,32			; деление частоты 8МГц на 32 = 250 КГц
-			out	OCR0A,temp		; в регистре совпадения
-			ldi	temp,1<<OCIE0A		; Разрешение прерывания по совпадению в канале А таймера 0
-			out	TIMSK,temp
+			ldi		temp,0b01000010	; 0b01000010	
+			out		TCCR0A,temp
+			ldi		temp,0b10000001	; 0b10000001	
+			out		TCCR0B,temp		; Р·Р°РїСѓСЃРє СЃС‡С‘С‚С‡РёРєР°
+			ldi		temp,0b00000000
+			out		TCNT0,temp		; Р—Р°РіСЂСѓР·РєР° СЃС‡С‘С‚РЅРѕРіРѕ СЂРµРіРёСЃС‚СЂР°
+			ldi		temp,32			; РґРµР»РµРЅРёРµ С‡Р°СЃС‚РѕС‚С‹ 8РњР“С† РЅР° 32 = 250 РљР“С†
+			out		OCR0A,temp		; РІ СЂРµРіРёСЃС‚СЂРµ СЃРѕРІРїР°РґРµРЅРёСЏ
+			ldi		temp,1<<OCIE0A	; Р Р°Р·СЂРµС€РµРЅРёРµ РїСЂРµСЂС‹РІР°РЅРёСЏ РїРѕ СЃРѕРІРїР°РґРµРЅРёСЋ РІ РєР°РЅР°Р»Рµ Рђ С‚Р°Р№РјРµСЂР° 0
+			out		TIMSK,temp
 
 ;-------------------------------------------------
-klava:   		in      temp, PIND     		; Прог-ма ожидает нажатие клавиши 
+klava:   	in      temp, PIND     	; РџСЂРѕРі-РјР° РѕР¶РёРґР°РµС‚ РЅР°Р¶Р°С‚РёРµ РєР»Р°РІРёС€Рё 
 			sbrs	temp, 0
 			rjmp	sync
 			rjmp	klava
 ;-------------------------------------------------
-sync:		   	sei				; Общее разрешение на прерывание
-			clr	bitcnt			; счётчик найденных подряд единичных битов(заголовка)
-H:			sbis	PINB, INPUT		; Ожидание высокого уровня
+sync:		sei						; РћР±С‰РµРµ СЂР°Р·СЂРµС€РµРЅРёРµ РЅР° РїСЂРµСЂС‹РІР°РЅРёРµ
+			clr		bitcnt			; СЃС‡С‘С‚С‡РёРє РЅР°Р№РґРµРЅРЅС‹С… РїРѕРґСЂСЏРґ РµРґРёРЅРёС‡РЅС‹С… Р±РёС‚РѕРІ(Р·Р°РіРѕР»РѕРІРєР°)
+H:			sbis	PINB, INPUT		; РћР¶РёРґР°РЅРёРµ РІС‹СЃРѕРєРѕРіРѕ СѓСЂРѕРІРЅСЏ
 			rjmp	H
 
-L:			sbic	PINB,INPUT		; Ожидание низкого уровня
+L:			sbic	PINB,INPUT		; РћР¶РёРґР°РЅРёРµ РЅРёР·РєРѕРіРѕ СѓСЂРѕРІРЅСЏ
 			rjmp	L
 
-			clr	timerL			; чистка счётчика
-korotkaja:		cpi	timerL,65		; Поиск короткой низкой площадки не более чем за 280 мл.секунд
-			brsh	dlinnaya		; Уход на поиск длинной площадки
+			clr		timerL			; С‡РёСЃС‚РєР° СЃС‡С‘С‚С‡РёРєР°
+korotkaja:	cpi		timerL,65		; РџРѕРёСЃРє РєРѕСЂРѕС‚РєРѕР№ РЅРёР·РєРѕР№ РїР»РѕС‰Р°РґРєРё РЅРµ Р±РѕР»РµРµ С‡РµРј Р·Р° 280 РјР».СЃРµРєСѓРЅРґ
+			brsh	dlinnaya		; РЈС…РѕРґ РЅР° РїРѕРёСЃРє РґР»РёРЅРЅРѕР№ РїР»РѕС‰Р°РґРєРё
 			sbis 	PINB,INPUT
-			rjmp	korotkaja		; Продложение поиска
-			rjmp	sync			; Найдена короткая, искать снова длинную 
+			rjmp	korotkaja		; РџСЂРѕРґР»РѕР¶РµРЅРёРµ РїРѕРёСЃРєР°
+			rjmp	sync			; РќР°Р№РґРµРЅР° РєРѕСЂРѕС‚РєР°СЏ, РёСЃРєР°С‚СЊ СЃРЅРѕРІР° РґР»РёРЅРЅСѓСЋ 
 				
-dlinnaya:		cpi	timerL,140		; Искать в пределах: не более чем за 560 мл.секунд 
-			brsh	sync			; выход за пределы по времени	
+dlinnaya:	cpi		timerL,140		; РСЃРєР°С‚СЊ РІ РїСЂРµРґРµР»Р°С…: РЅРµ Р±РѕР»РµРµ С‡РµРј Р·Р° 560 РјР».СЃРµРєСѓРЅРґ 
+			brsh	sync			; РІС‹С…РѕРґ Р·Р° РїСЂРµРґРµР»С‹ РїРѕ РІСЂРµРјРµРЅРё	
 			sbic	PINB,INPUT		
-			rjmp	preambula		; Синхронизация установлена, можно приступать к поиску заголовка
+			rjmp	preambula		; РЎРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ СѓСЃС‚Р°РЅРѕРІР»РµРЅР°, РјРѕР¶РЅРѕ РїСЂРёСЃС‚СѓРїР°С‚СЊ Рє РїРѕРёСЃРєСѓ Р·Р°РіРѕР»РѕРІРєР°
 			rjmp	dlinnaya		
 
 ;-------------------------------------------------
-preambula:		clr	timerL			; Ожидание спада за 260 мл.сек
-loop1:			cpi	timerL,70
-			brsh	bit1			; если за длинной площадкой находится"единица"
+preambula:	clr		timerL			; РћР¶РёРґР°РЅРёРµ СЃРїР°РґР° Р·Р° 260 РјР».СЃРµРє
+loop1:		cpi		timerL,70
+			brsh	bit1			; РµСЃР»Рё Р·Р° РґР»РёРЅРЅРѕР№ РїР»РѕС‰Р°РґРєРѕР№ РЅР°С…РѕРґРёС‚СЃСЏ"РµРґРёРЅРёС†Р°"
 			sbic	PINB,INPUT
 			rjmp	loop1
-			rjmp	sync			; если за длинной площадкой находится "ноль" - начать сначала
+			rjmp	sync			; РµСЃР»Рё Р·Р° РґР»РёРЅРЅРѕР№ РїР»РѕС‰Р°РґРєРѕР№ РЅР°С…РѕРґРёС‚СЃСЏ "РЅРѕР»СЊ" - РЅР°С‡Р°С‚СЊ СЃРЅР°С‡Р°Р»Р°
 			
-bit1:			sbic	PINB,INPUT		; Ожидание спада импульса
+bit1:		sbic	PINB,INPUT		; РћР¶РёРґР°РЅРёРµ СЃРїР°РґР° РёРјРїСѓР»СЊСЃР°
 			rjmp	bit1			
 				
-			clr	timerL			; очистка счётчика
-loop2:			cpi	timerL,70		; Ожидание подъёма импульса в течении 280 мл.секунд
-			brsh	dl				; Уход на поиск длинной площадки
+			clr		timerL			; РѕС‡РёСЃС‚РєР° СЃС‡С‘С‚С‡РёРєР°
+loop2:		cpi		timerL,70		; РћР¶РёРґР°РЅРёРµ РїРѕРґСЉС‘РјР° РёРјРїСѓР»СЊСЃР° РІ С‚РµС‡РµРЅРёРё 280 РјР».СЃРµРєСѓРЅРґ
+			brsh	dl				; РЈС…РѕРґ РЅР° РїРѕРёСЃРє РґР»РёРЅРЅРѕР№ РїР»РѕС‰Р°РґРєРё
 			sbis 	PINB,INPUT
 			rjmp	loop2			
-			inc	bitcnt			; увеличить счётчик
-			cpi	bitcnt,9
-			breq	massiv			; При успешном нахождении заголовка
-			rjmp	bit1			; Повтор поиска
-dl:			clr	bitcnt			
-			rjmp	dlinnaya		; При не удачном поиске
+			inc		bitcnt			; СѓРІРµР»РёС‡РёС‚СЊ СЃС‡С‘С‚С‡РёРє
+			cpi		bitcnt,9
+			breq	massiv			; РџСЂРё СѓСЃРїРµС€РЅРѕРј РЅР°С…РѕР¶РґРµРЅРёРё Р·Р°РіРѕР»РѕРІРєР°
+			rjmp	bit1			; РџРѕРІС‚РѕСЂ РїРѕРёСЃРєР°
+dl:			clr		bitcnt			
+			rjmp	dlinnaya		; РџСЂРё РЅРµ СѓРґР°С‡РЅРѕРј РїРѕРёСЃРєРµ
 
 ;-------------------------------------------------
-massiv:			clr	XH
-			ldi	XL,0x60
-			ldi	cikl,60
+massiv:		clr		XH
+			ldi		XL,0x60
+			ldi		cikl,60
 
-loop3:			clr	timerL
-vysok:			cpi	timerL,70
+loop3:		clr		timerL
+vysok:		cpi		timerL,70
 			brsh	met11
 			sbic	PINB,INPUT
 			rjmp	vysok
-			ldi	parity,2
-			st	X+,parity
+			ldi		parity,2
+			st		X+,parity
 			rjmp	nizki
-met11:			cpi	timerL,130
-vyh:			brsh	sync
+met11:		cpi		timerL,130
+vyh:		brsh	sync
 			sbic	PINB,INPUT
 			rjmp	met11
-			ldi	parity,3
-			st	X+,parity
-nizki:			clr	timerL
-loop4:			cpi	timerL,70
+			ldi		parity,3
+			st		X+,parity
+nizki:		clr		timerL
+loop4:		cpi		timerL,70
 			brsh	met10
 			sbis	PINB,INPUT
 			rjmp	loop4
-			ldi	parity,1
-			st	X+,parity
-			dec	cikl
+			ldi		parity,1
+			st		X+,parity
+			dec		cikl
 			brne	loop3
 			rjmp	decodir
-met10:			cpi	timerL,130
+met10:		cpi		timerL,130
 			brsh	vyh
 			sbis	PINB,INPUT
 			rjmp	met10
-			clr	parity
-			st	X+,parity
-			dec	cikl
+			clr		parity
+			st		X+,parity
+			dec		cikl
 			brne	loop3
 
 ;-------------------------------------------------
-decodir:		cli
-			clr	temp
-			ldi	YL,0xc5	
-			ldi	bitcnt,128
-			clr	system
-			ldi	timerL,2
-			ldi	XL,0x60
+decodir:	cli
+			clr		temp
+			ldi		YL,0xc5	
+			ldi		bitcnt,128
+			clr		system
+			ldi		timerL,2
+			ldi		XL,0x60
 
-loop5:			ld	data,X+
-			cpi	data,0			; Фильтрация
+loop5:		ld		data,X+
+			cpi		data,0			; Р¤РёР»СЊС‚СЂР°С†РёСЏ
 			breq	byt0_0
-			cpi	data,1
+			cpi		data,1
 			breq	byt0
-			cpi	data,2
+			cpi		data,2
 			breq	byt1
-			cpi	data,3
+			cpi		data,3
 			breq	byt1_1
 			
-byt0_0:			clc	
-			rol	system			; Заталкивание "0"
+byt0_0:		clc	
+			rol		system			; Р—Р°С‚Р°Р»РєРёРІР°РЅРёРµ "0"
 			sec
-			rol	temp			; включить контроль
-byt0:			clc		
-			rol	system			; Заталкивание "0"
+			rol		temp			; РІРєР»СЋС‡РёС‚СЊ РєРѕРЅС‚СЂРѕР»СЊ
+byt0:		clc		
+			rol		system			; Р—Р°С‚Р°Р»РєРёРІР°РЅРёРµ "0"
 			sec
-			rol	temp			; включить контроль
-			brhs	contin			; и проверку на переполнение тетрады
-			dec	bitcnt			; уменьшить общий счётчик 
-			breq	decod2			; в случае завершения или
-			rjmp	loop5			; повторять до окончания
+			rol		temp			; РІРєР»СЋС‡РёС‚СЊ РєРѕРЅС‚СЂРѕР»СЊ
+			brhs	contin			; Рё РїСЂРѕРІРµСЂРєСѓ РЅР° РїРµСЂРµРїРѕР»РЅРµРЅРёРµ С‚РµС‚СЂР°РґС‹
+			dec		bitcnt			; СѓРјРµРЅСЊС€РёС‚СЊ РѕР±С‰РёР№ СЃС‡С‘С‚С‡РёРє 
+			breq	decod2			; РІ СЃР»СѓС‡Р°Рµ Р·Р°РІРµСЂС€РµРЅРёСЏ РёР»Рё
+			rjmp	loop5			; РїРѕРІС‚РѕСЂСЏС‚СЊ РґРѕ РѕРєРѕРЅС‡Р°РЅРёСЏ
 
-byt1_1:			sec
-			rol	system			; Заталкивание "1"
+byt1_1:		sec
+			rol		system			; Р—Р°С‚Р°Р»РєРёРІР°РЅРёРµ "1"
 			sec						
-			rol	temp			; включить контроль
-byt1:			sec
-			rol	system			; Заталкивание "1"
+			rol		temp			; РІРєР»СЋС‡РёС‚СЊ РєРѕРЅС‚СЂРѕР»СЊ
+byt1:		sec
+			rol		system			; Р—Р°С‚Р°Р»РєРёРІР°РЅРёРµ "1"
 			sec
-			rol	temp			; включить контроль
-			brhs	contin			; и проверку на переполнение тетрады
-			dec	bitcnt			; уменьшить общий счётчик 
-			breq	decod2			; в случаи завершения 
-			rjmp	loop5			; повторять до окончания
+			rol		temp			; РІРєР»СЋС‡РёС‚СЊ РєРѕРЅС‚СЂРѕР»СЊ
+			brhs	contin			; Рё РїСЂРѕРІРµСЂРєСѓ РЅР° РїРµСЂРµРїРѕР»РЅРµРЅРёРµ С‚РµС‚СЂР°РґС‹
+			dec		bitcnt			; СѓРјРµРЅСЊС€РёС‚СЊ РѕР±С‰РёР№ СЃС‡С‘С‚С‡РёРє 
+			breq	decod2			; РІ СЃР»СѓС‡Р°Рё Р·Р°РІРµСЂС€РµРЅРёСЏ 
+			rjmp	loop5			; РїРѕРІС‚РѕСЂСЏС‚СЊ РґРѕ РѕРєРѕРЅС‡Р°РЅРёСЏ
 
-contin:			dec	timerL			; Принадлежность к тетраде
+contin:		dec		timerL			; РџСЂРёРЅР°РґР»РµР¶РЅРѕСЃС‚СЊ Рє С‚РµС‚СЂР°РґРµ
 			breq	con1
-			push	system			; временно сохранить
-			andi	system,0x1E		; выделить только 4 старших бита
-			ror	system			; сдвинуть на место младшей
-			mov	parity,system		; и поместить в data
-			swap	parity			; сделать старшей частью
-			pop	system			; востановить 5 бит	
-			andi	system,0x01		; выделить только 1й
-			ldi	temp,1			; зарегистрировать наличие этого бита
-			dec	bitcnt			; уменьшить общий счётчик 
-			breq	decod2			; в случаи завершения
+			push	system			; РІСЂРµРјРµРЅРЅРѕ СЃРѕС…СЂР°РЅРёС‚СЊ
+			andi	system,0x1E		; РІС‹РґРµР»РёС‚СЊ С‚РѕР»СЊРєРѕ 4 СЃС‚Р°СЂС€РёС… Р±РёС‚Р°
+			ror		system			; СЃРґРІРёРЅСѓС‚СЊ РЅР° РјРµСЃС‚Рѕ РјР»Р°РґС€РµР№
+			mov		parity,system	; Рё РїРѕРјРµСЃС‚РёС‚СЊ РІ data
+			swap	parity			; СЃРґРµР»Р°С‚СЊ СЃС‚Р°СЂС€РµР№ С‡Р°СЃС‚СЊСЋ
+			pop		system			; РІРѕСЃС‚Р°РЅРѕРІРёС‚СЊ 5 Р±РёС‚	
+			andi	system,0x01		; РІС‹РґРµР»РёС‚СЊ С‚РѕР»СЊРєРѕ 1Р№
+			ldi		temp,1			; Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊ РЅР°Р»РёС‡РёРµ СЌС‚РѕРіРѕ Р±РёС‚Р°
+			dec		bitcnt			; СѓРјРµРЅСЊС€РёС‚СЊ РѕР±С‰РёР№ СЃС‡С‘С‚С‡РёРє 
+			breq	decod2			; РІ СЃР»СѓС‡Р°Рё Р·Р°РІРµСЂС€РµРЅРёСЏ
 			rjmp	loop5
 
-con1:			push	system			; временно сохранить
-			andi	system,0x1E		; выделить только старшие 4 бита
-			ror	system			; сдвинуть на место младшей
-			or	parity,system		; объединить со старшей предыдущей
-			st	Y+,parity		; сохранить в памяти сформированый байт	
-			pop	system			; востановить последние 5 бит
-			andi	system,0x01		; выделить только младший бит 
-			ldi	temp,1      		; зарегистрировать наличие этого бита 
-			ldi	timerL,2		; назначить новый 2х тактный цикл
-			dec	bitcnt			; уменьшить общий счётчик 
-			breq	decod2			; в случаи завершения
-			rjmp    loop5 			; перейти на следующий бит	 
+con1:		push	system			; РІСЂРµРјРµРЅРЅРѕ СЃРѕС…СЂР°РЅРёС‚СЊ
+			andi	system,0x1E		; РІС‹РґРµР»РёС‚СЊ С‚РѕР»СЊРєРѕ СЃС‚Р°СЂС€РёРµ 4 Р±РёС‚Р°
+			ror		system			; СЃРґРІРёРЅСѓС‚СЊ РЅР° РјРµСЃС‚Рѕ РјР»Р°РґС€РµР№
+			or		parity,system	; РѕР±СЉРµРґРёРЅРёС‚СЊ СЃРѕ СЃС‚Р°СЂС€РµР№ РїСЂРµРґС‹РґСѓС‰РµР№
+			st		Y+,parity		; СЃРѕС…СЂР°РЅРёС‚СЊ РІ РїР°РјСЏС‚Рё СЃС„РѕСЂРјРёСЂРѕРІР°РЅС‹Р№ Р±Р°Р№С‚	
+			pop		system			; РІРѕСЃС‚Р°РЅРѕРІРёС‚СЊ РїРѕСЃР»РµРґРЅРёРµ 5 Р±РёС‚
+			andi	system,0x01		; РІС‹РґРµР»РёС‚СЊ С‚РѕР»СЊРєРѕ РјР»Р°РґС€РёР№ Р±РёС‚ 
+			ldi		temp,1      	; Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊ РЅР°Р»РёС‡РёРµ СЌС‚РѕРіРѕ Р±РёС‚Р° 
+			ldi		timerL,2		; РЅР°Р·РЅР°С‡РёС‚СЊ РЅРѕРІС‹Р№ 2С… С‚Р°РєС‚РЅС‹Р№ С†РёРєР»
+			dec		bitcnt			; СѓРјРµРЅСЊС€РёС‚СЊ РѕР±С‰РёР№ СЃС‡С‘С‚С‡РёРє 
+			breq	decod2			; РІ СЃР»СѓС‡Р°Рё Р·Р°РІРµСЂС€РµРЅРёСЏ
+			rjmp    loop5 			; РїРµСЂРµР№С‚Рё РЅР° СЃР»РµРґСѓСЋС‰РёР№ Р±РёС‚	 
 
 ;-------------------------------------------------
-decod2:			ldi	cikl,15
-			ldi	YL,0x60
-			ldi	XL,0xc5
-loop6:			clr	system
-			ldi	timerL,2
+decod2:		ldi		cikl,15
+			ldi		YL,0x60
+			ldi		XL,0xc5
+loop6:		clr		system
+			ldi		timerL,2
 
-bi7:			ld	data,X+
+bi7:		ld		data,X+
 			sbrc	data,7
 			rjmp	bi7_1
 			clc
-			rol	system
+			rol		system
 			rjmp	bi5
 
-bi7_1:			sec
+bi7_1:		sec
 			rol 	system
-bi5:			sbrc	data,5
+bi5:		sbrc	data,5
 			rjmp	bi5_1
 			clc
-			rol	system
+			rol		system
 			rjmp	bi3
 
-bi5_1:			sec
+bi5_1:		sec
 			rol 	system	
 
-bi3:			sbrc	data,3
+bi3:		sbrc	data,3
 			rjmp	bi3_1
 			clc
-			rol	system
+			rol		system
 			rjmp	bi1
 
-bi3_1:			sec
+bi3_1:		sec
 			rol 	system
 
-bi1:			sbrc	data,1
+bi1:		sbrc	data,1
 			rjmp	bi1_1
 			clc
-			rol	system
+			rol		system
 			rjmp	bi
 
-bi1_1:			sec
+bi1_1:		sec
 			rol 	system
 
-bi:			dec	cikl
+bi:			dec		cikl
 			breq	bi_1
-			dec	timerL
+			dec		timerL
 			brne	bi7
-			st	Y+,system
+			st		Y+,system
 			rjmp	loop6
-bi_1:			st	Y+,system
+bi_1:		st		Y+,system
 
 ;-------------------------------------------------
-decod3:			ldi	YL,0x70			; Нач.адрес приёмника 
-			ldi	XL,0x60			; Нач.адрес источника
-			ldi	cikl,6			; цикл из 6ти байтов + 2 предыдущих =8
-			ser	data			; выслать код заголовка preambula 8 бит
-			st	Y+,data			; в ОЗУ
+decod3:		ldi		YL,0x70			; РќР°С‡.Р°РґСЂРµСЃ РїСЂРёС‘РјРЅРёРєР° 
+			ldi		XL,0x60			; РќР°С‡.Р°РґСЂРµСЃ РёСЃС‚РѕС‡РЅРёРєР°
+			ldi		cikl,6			; С†РёРєР» РёР· 6С‚Рё Р±Р°Р№С‚РѕРІ + 2 РїСЂРµРґС‹РґСѓС‰РёС… =8
+			ser		data			; РІС‹СЃР»Р°С‚СЊ РєРѕРґ Р·Р°РіРѕР»РѕРІРєР° preambula 8 Р±РёС‚
+			st		Y+,data			; РІ РћР—РЈ
 			
-			ld	data,X+			; Из 1го байта 
-			ldi	system,0xFE		
-			and	system,data		; выделить 7 старших
-			ror	system
-			ldi	temp,128
-			or	system,temp     	; и сложить с 9тым битом заголовка и сохранить уже второй байт 
+			ld		data,X+			; РР· 1РіРѕ Р±Р°Р№С‚Р° 
+			ldi		system,0xFE		
+			and		system,data		; РІС‹РґРµР»РёС‚СЊ 7 СЃС‚Р°СЂС€РёС…
+			ror		system
+			ldi		temp,128
+			or		system,temp     ; Рё СЃР»РѕР¶РёС‚СЊ СЃ 9С‚С‹Рј Р±РёС‚РѕРј Р·Р°РіРѕР»РѕРІРєР° Рё СЃРѕС…СЂР°РЅРёС‚СЊ СѓР¶Рµ РІС‚РѕСЂРѕР№ Р±Р°Р№С‚ 
 
-loop7:			st	Y+,system		; сохранить в ОЗУ
-			ld	system,X+		; подготовить следующий байт 
-			andi	data,0x01		; выделить младший бит предыдущего байта
-			swap	data			; поставить на место 7го разряда
-			rol	data
-			rol	data
-			rol	data
-			ldi	temp,0xFE
-			push	system			; временно сохранить для дальнейшего использования
-			and	system,temp		; выделить в текущем байте 7 старших бит
-			ror	system			; и сдвинуть в младшую часть
-			or	system,data		; объединить предыдущий с текущим
-			pop	data			; востановить текущий полностью
-			dec	cikl			; уменьшить счётчик и проверить 
-			breq	zapis			; если все 6ть обработаны выход
-			rjmp	loop7			; либо продолжить
+loop7:		st		Y+,system		; СЃРѕС…СЂР°РЅРёС‚СЊ РІ РћР—РЈ
+			ld		system,X+		; РїРѕРґРіРѕС‚РѕРІРёС‚СЊ СЃР»РµРґСѓСЋС‰РёР№ Р±Р°Р№С‚ 
+			andi	data,0x01		; РІС‹РґРµР»РёС‚СЊ РјР»Р°РґС€РёР№ Р±РёС‚ РїСЂРµРґС‹РґСѓС‰РµРіРѕ Р±Р°Р№С‚Р°
+			swap	data			; РїРѕСЃС‚Р°РІРёС‚СЊ РЅР° РјРµСЃС‚Рѕ 7РіРѕ СЂР°Р·СЂСЏРґР°
+			rol		data
+			rol		data
+			rol		data
+			ldi		temp,0xFE
+			push	system			; РІСЂРµРјРµРЅРЅРѕ СЃРѕС…СЂР°РЅРёС‚СЊ РґР»СЏ РґР°Р»СЊРЅРµР№С€РµРіРѕ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ
+			and		system,temp		; РІС‹РґРµР»РёС‚СЊ РІ С‚РµРєСѓС‰РµРј Р±Р°Р№С‚Рµ 7 СЃС‚Р°СЂС€РёС… Р±РёС‚
+			ror		system			; Рё СЃРґРІРёРЅСѓС‚СЊ РІ РјР»Р°РґС€СѓСЋ С‡Р°СЃС‚СЊ
+			or		system,data		; РѕР±СЉРµРґРёРЅРёС‚СЊ РїСЂРµРґС‹РґСѓС‰РёР№ СЃ С‚РµРєСѓС‰РёРј
+			pop		data			; РІРѕСЃС‚Р°РЅРѕРІРёС‚СЊ С‚РµРєСѓС‰РёР№ РїРѕР»РЅРѕСЃС‚СЊСЋ
+			dec		cikl			; СѓРјРµРЅСЊС€РёС‚СЊ СЃС‡С‘С‚С‡РёРє Рё РїСЂРѕРІРµСЂРёС‚СЊ 
+			breq	zapis			; РµСЃР»Рё РІСЃРµ 6С‚СЊ РѕР±СЂР°Р±РѕС‚Р°РЅС‹ РІС‹С…РѕРґ
+			rjmp	loop7			; Р»РёР±Рѕ РїСЂРѕРґРѕР»Р¶РёС‚СЊ
 			
 ;-------------------------------------------------
-zapis:			st	Y+,system		; сохранить в ОЗУ
+zapis:		st		Y+,system		; СЃРѕС…СЂР°РЅРёС‚СЊ РІ РћР—РЈ
 			cli
 			
-			ldi	cikl,8
-			ldi	XL,0x70
-			ldi	addr,0
+			ldi		cikl,8
+			ldi		XL,0x70
+			ldi		addr,0
 			
-loop9:			ld	data, X+
+loop9:		ld		data, X+
 			rcall	eeprom_save
-			dec	cikl
+			dec		cikl
 			brne	loop9
 
 ;-------------------------------------------------
-; Три коротких гудка частотой 1 КГц
-			sei				; разрешение на прерывание
+; РўСЂРё РєРѕСЂРѕС‚РєРёС… РіСѓРґРєР° С‡Р°СЃС‚РѕС‚РѕР№ 1 РљР“С†
+			sei						; СЂР°Р·СЂРµС€РµРЅРёРµ РЅР° РїСЂРµСЂС‹РІР°РЅРёРµ
 			rcall	zvuk
-			ldi	temp,32			; пауза 0,25 сек
+			ldi		temp,32			; РїР°СѓР·Р° 0,25 СЃРµРє
 			rcall	pauza
 			rcall	zvuk
-			ldi	temp,32			; пауза 0,25 сек
+			ldi		temp,32			; РїР°СѓР·Р° 0,25 СЃРµРє
 			rcall	pauza
 			rcall	zvuk
 
 ;-------------------------------------------------
-			ldi	temp,255		; пауза 0,25 сек
+			ldi		temp,255		; РїР°СѓР·Р° 0,25 СЃРµРє
 			rcall	pauza
-			ldi	temp,255		; пауза 0,25 сек
+			ldi		temp,255		; РїР°СѓР·Р° 0,25 СЃРµРє
 			rcall 	pauza
-			ldi	temp,255		; пауза 0,25 сек
+			ldi		temp,255		; РїР°СѓР·Р° 0,25 СЃРµРє
 			rcall	pauza
-			ldi	temp,255		; пауза 0,25 сек
+			ldi		temp,255		; РїР°СѓР·Р° 0,25 СЃРµРє
 			rcall	pauza				
-			ldi	temp,255		; пауза 0,25 сек
+			ldi		temp,255		; РїР°СѓР·Р° 0,25 СЃРµРє
 			rcall	pauza
-			ldi	temp,255		; пауза 0,25 сек
+			ldi		temp,255		; РїР°СѓР·Р° 0,25 СЃРµРє
 			rcall 	pauza
-			ldi	temp,255		; пауза 0,25 сек
+			ldi		temp,255		; РїР°СѓР·Р° 0,25 СЃРµРє
 			rcall	pauza
-			ldi	temp,255		; пауза 0,25 сек
+			ldi		temp,255		; РїР°СѓР·Р° 0,25 СЃРµРє
 			rcall	pauza
 
 			rjmp	klava
 
 ;-------------------------------------------------
-eeprom_save:		sbic 	EECR,EEPE		; Ожидание готовности EEPROM
+eeprom_save:sbic 	EECR,EEPE		; РћР¶РёРґР°РЅРёРµ РіРѕС‚РѕРІРЅРѕСЃС‚Рё EEPROM
 			rjmp 	eeprom_save
 			
 			out 	EEARL,addr			
 			out 	EEDR,data
-			sbi 	EECR,EEMPE		; Установка бита разрешения записи
-			sbi 	EECR,EEPE		; команда записи в EEPROM
-			inc	addr			; подготовка следующего адреса	
+			sbi 	EECR,EEMPE		; РЈСЃС‚Р°РЅРѕРІРєР° Р±РёС‚Р° СЂР°Р·СЂРµС€РµРЅРёСЏ Р·Р°РїРёСЃРё
+			sbi 	EECR,EEPE		; РєРѕРјР°РЅРґР° Р·Р°РїРёСЃРё РІ EEPROM
+			inc		addr			; РїРѕРґРіРѕС‚РѕРІРєР° СЃР»РµРґСѓСЋС‰РµРіРѕ Р°РґСЂРµСЃР°	
 			ret
 
 ;-------------------------------------------------
-pauza:			clr	timerL
-p1:			cpi	timerL, 255
+pauza:		clr		timerL
+p1:			cpi		timerL, 255
 			brne	p1
 			dec 	temp
 			brne	pauza
 			ret
 
 ;-------------------------------------------------
-; звуковой сигнал длительностью 0,25 секунд
-zvuk:			ldi	bitcnt,32
-zv:			sbi	PORTB,0
-			ldi	temp,1
+; Р·РІСѓРєРѕРІРѕР№ СЃРёРіРЅР°Р» РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊСЋ 0,25 СЃРµРєСѓРЅРґ
+zvuk:		ldi		bitcnt,32
+zv:			sbi		PORTB,0
+			ldi		temp,1
 			rcall	pauza
-			cbi	PORTB,0
-			ldi	temp,1
+			cbi		PORTB,0
+			ldi		temp,1
 			rcall	pauza
-			dec	bitcnt
+			dec		bitcnt
 			brne 	zv
 			ret
 
 ;-------------------------------------------------
-OC0Aaddrs:		in	S,SREG			; Чтение регистра флагов
-			inc	timerL			; increment timerL
-			out	SREG,S			; Запись в регистр Флагов
+OC0Aaddrs:	in		S,SREG			; Р§С‚РµРЅРёРµ СЂРµРіРёСЃС‚СЂР° С„Р»Р°РіРѕРІ
+			inc		timerL			; increment timerL
+			out		SREG,S			; Р—Р°РїРёСЃСЊ РІ СЂРµРіРёСЃС‚СЂ Р¤Р»Р°РіРѕРІ
 			reti
 ;-------------------------------------------------
 ;-------------------------------------------------
