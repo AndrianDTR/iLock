@@ -9,19 +9,19 @@
 
 /******************************************************************************/
 #define LED_POWER_CLR()			(PORTB |= (1 << 1))
-#define LED_POWER_SET()			(PORTB &= (0 << 1))
+#define LED_POWER_SET()			(PORTB &= ~(1 << 1))
 #define LED_POWER_TOGLE()		(PORTB ^= (1 << 1))
 
 #define LED_OK_CLR()			(PORTB |= (1 << 2))
-#define LED_OK_SET()			(PORTB &= (0 << 2))
+#define LED_OK_SET()			(PORTB &= ~(1 << 2))
 #define LED_OK_TOGLE()			(PORTB ^= (1 << 2))
 
 #define RELAY_CLR()				(PORTB |= (1 << 4))
-#define RELAY_SET()				(PORTB &= (0 << 4))
+#define RELAY_SET()				(PORTB &= ~(1 << 4))
 #define RELAY_TOGLE()			(PORTB ^= (1 << 4))
 
 #define BUZ_CLR()				(PORTD |= (1 << 4))
-#define BUZ_SET()				(PORTD &= (0 << 4))
+#define BUZ_SET()				(PORTD &= ~(1 << 4))
 #define BUZ_TOGLE()				(PORTD ^= (1 << 4))
 #define BEEP()					BUZ_SET(); _delay_ms(50); BUZ_CLR();
 #define BEEP_LONG()				BUZ_SET(); _delay_ms(200); BUZ_CLR();
@@ -249,29 +249,31 @@ void KBDParse()
 }
 
 /*******************************************************************************/
-#define RFID_BIT_LEN			32
-#define	RFID_SHORT				(RFID_BIT_LEN + 1) * 2
-#define	RFID_LONG				RFID_SHORT * 2
+#define RFID_HALFBIT_LEN		15
+#define	RFID_SHORT				RFID_HALFBIT_LEN * 2
+#define	RFID_LONG				RFID_HALFBIT_LEN * 4
 
 #define RF_HEADER_BITCNT		9
 #define RF_READ_ERROR			-1
 #define RF_DEMOD				((PIND & (1<<PIND6)) != 0)
 
 // data buffer length
-#define BITBUF_LEN 140
+#define BITBUF_LEN 70
 
 // State machine states
 #define		RS_SYNC			0
-#define		RS_FIND			1
-#define		RS_SHORT		2
-#define		RS_LONG			3
-#define		RS_PREAMB		4
-#define		RS_READTAG		5
-#define		RS_DECODE		6
-#define		RS_DECODE1		7
+#define		RS_FIND			10
+#define		RS_H			20
+#define		RS_L			30
+#define		RS_SHORT		40
+#define		RS_LONG			50
+#define		RS_PREAMB		60
+#define		RS_READTAG		70
+#define		RS_DECODE		80
+#define		RS_DECODE1		90
 
 // counts 125kHz pulses
-volatile unsigned char 			count;					
+volatile unsigned int 			count;					
 
 // read bits counter
 unsigned char 					bitCnt;	
@@ -300,7 +302,14 @@ unsigned char nibbleSwap(unsigned char a)
  */
 ISR(TIMER0_COMP_vect)
 {
-	++count;
+	static unsigned char n = 0;
+	if(n&1)
+	{
+		++count;
+		n = 0;
+	}
+	else
+		n = 1;
 }
 
 /*
@@ -326,9 +335,9 @@ void RFIDInit()
  * @return 	int, read bit value or -1 if timeout is exceeded.
  *
  */
-int RFIDGetBit()
+unsigned char RFIDGetBit()
 {
-	int value = RF_DEMOD;
+	unsigned char value = RF_DEMOD;
 	count = 0;
 
 	do
@@ -345,7 +354,6 @@ int RFIDGetBit()
 		}
 	}while(1);
 	
-	//printf("%c", '0'+value);
 	return value;
 }
 
@@ -566,31 +574,29 @@ void StateMachine()
 		case RS_SYNC:
 		{
 			KBDParse();
-			bitCnt = 0;
+			
+			if(RF_DEMOD) rfState = RS_H;
+			break;
+		}
+		case RS_H:
+			if(!RF_DEMOD) rfState = RS_L;
+			break;
+		case RS_L:
 			if(RF_DEMOD)
 			{
-				rfState = RS_FIND;
-			}
-		
-			break;
-		}
-		
-		case RS_FIND:
-		{
-			if(!RF_DEMOD)
-			{
 				rfState = RS_SHORT;
+				count = 0;
 			}
-			count = 0;
 			break;
-		}
 		
 		case RS_SHORT:
 		{
 			if(count > RFID_SHORT)
 			{
-				if(!RF_DEMOD)
+				if(RF_DEMOD)
+				{
 					rfState = RS_LONG;
+				}
 				else
 					rfState = RS_SYNC;
 			}
@@ -600,7 +606,7 @@ void StateMachine()
 		
 		case RS_LONG:
 		{
-			if(count < RFID_LONG)
+			if(count > RFID_LONG)
 			{
 				if(RF_DEMOD)
 				{
@@ -608,38 +614,32 @@ void StateMachine()
 					bitCnt = 0;
 					count = 0;
 				}
+				else
+				{
+					rfState = RS_SYNC;
+				}
 			}
-			else
-				rfState = RS_SYNC;
 			
 			break;
 		}
 		
 		case RS_PREAMB:
 		{
-			int bit = RFIDGetBit();
+			unsigned char bit = RFIDGetBit();
 			if(1 == bit)
 				++bitCnt;
-			else
+			else if(-1 == bit)
+			{
 				rfState = RS_SYNC;
+				LED_OK_SET();
+			}
 			
 			if(RF_HEADER_BITCNT == bitCnt)
 			{
-				rfState = RS_READTAG;
 				bitCnt = 0;
-			}
-			break;
-		}
-		
-		case RS_READTAG:
-		{
-			int bit = RFIDGetBit();
-			if(RF_READ_ERROR != bit)
-				bitBuf[bitCnt++] = bit;
-			
-			if(BITBUF_LEN == bitCnt)
+				RFIDReadTag(bitBuf);
 				rfState = RS_DECODE;
-			
+			}
 			break;
 		}
 		
@@ -656,6 +656,7 @@ void StateMachine()
 			}
 			printf("\n");
 			rfState = RS_SYNC;
+			break;
 		}
 
 		default:
@@ -694,12 +695,37 @@ int main(void)
 	init();
 	
 	sei(); // Enable global interrupts 
-	
+	//unsigned char cnt = 0;
+	//unsigned char val = RF_DEMOD;
 	printf("A1\n");
+	//count = 0;
 	while(1) 
 	{
 		StateMachine();
 		_delay_us(2);
+		/*
+		unsigned char v2 = RF_DEMOD;
+		if(val != v2)
+		{
+			bitBuf[cnt++] = count;
+			count = 0;
+			val = v2;
+		}
+		
+		if(cnt == 250)
+		{	
+			unsigned char i;
+			for(i = 0; i < BITBUF_LEN; ++i)
+			{
+				printf("%i => %i\n", i, bitBuf[i]);
+				bitBuf[i] = 0;
+			}
+			printf("\n\n");
+			count = 0;
+			cnt = 0;
+			val = v2 = 0;
+		}
+		//*/
 	} 
 	printf("A0\n");
 	
