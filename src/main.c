@@ -334,12 +334,7 @@ void RFIDInit()
  * @brief	Read bit from RFID tag
  * 
  * @return 	int, read bit value or -1 if timeout is exceeded.
- *{
-	char val=0;
-	RfIsSet(val);
-	return val;
-}
-
+ *
  */
 unsigned char RFIDGetBit()
 {
@@ -367,27 +362,22 @@ char RFIDReadTag(unsigned char* p)
 {
 	char res = 0;
 	unsigned char cikl = 60;
-	unsigned char readState = 0;
+	unsigned char readState = 1;
 	unsigned char i;
 	
 	do{
 		switch(readState)
 		{
-			//loop3
-			case 0:
-				count = 0;
-				readState = 1;
-				break;
 			//vysok
 			case 1:
-				if(count < 70)
+				if(count < RFID_SHORT)
 				{
 					if(RF_DEMOD)
 						break;
-					*p++ = 2;
+					*p = 2;
 					readState = 3;
 				}
-				else if(count >= 130)
+				else if(count > RFID_LONG)
 				{
 					res = -1;
 					break;
@@ -395,8 +385,8 @@ char RFIDReadTag(unsigned char* p)
 				else
 				{
 					if(RF_DEMOD)
-						break;
-					*p++ = 3;
+						break;BITBUF_LEN
+					*p = 3;
 					readState = 6;
 				}
 				break;
@@ -411,7 +401,7 @@ char RFIDReadTag(unsigned char* p)
 				{
 					if(!RF_DEMOD)
 						break;
-					*p++ = 1;
+					*p = 1;
 					readState = 6;
 					break;
 				}
@@ -424,14 +414,18 @@ char RFIDReadTag(unsigned char* p)
 				{
 					if(!RF_DEMOD)
 						break;
-					*p++ = 0;
+					*p = 0;
 					readState = 6;
 				}
 				
 				break;
 			case 6:
 				--cikl;
-				if(cikl) readState = 0;
+				p++;
+				if(cikl)
+				{
+					readState = 5;
+				}
 				break;
 			default:
 				res = 1;
@@ -440,7 +434,7 @@ char RFIDReadTag(unsigned char* p)
 	
 	printf("AAA: ");
 	for(i = 0; i < BITBUF_LEN-1; ++i) printf("%c", '0'+bitBuf[i]);
-	printf("\n");
+	printf("\n\n");
 	return res;
 }
 
@@ -648,9 +642,7 @@ void StateMachine()
 			
 			if(RF_HEADER_BITCNT == bitCnt)
 			{
-				bitCnt = 0;
-				count = 0;
-				//RFIDReadTag(bitBuf);
+				RFIDReadTag(bitBuf);
 				rfState = RS_DECODE;
 			}
 			break;
