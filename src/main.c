@@ -156,7 +156,8 @@ void ParseCmd(char* cmd)
  * on the Keypad. Keys are numbered as follows
 
  * [00] [01] [02]
- * [03] [04] [05]
+ * [03] [04] [05]Program exited with return code: 1
+
  * [06] [07] [08]
  * [09] [10] [11]
  * 
@@ -249,13 +250,13 @@ void KBDParse()
 }
 
 /*******************************************************************************/
-#define RFID_HALFBIT_LEN		15
-#define	RFID_SHORT				RFID_HALFBIT_LEN * 2
-#define	RFID_LONG				RFID_HALFBIT_LEN * 4
+#define RFID_HALFBIT_LEN		32
+#define	RFID_SHORT				RFID_HALFBIT_LEN * 2 + 1
+#define	RFID_LONG				RFID_HALFBIT_LEN * 4 + 2
 
 #define RF_HEADER_BITCNT		9
 #define RF_READ_ERROR			-1
-#define RF_DEMOD				((PIND & (1<<PIND6)) != 0)
+#define RF_DEMOD				((PIND & _BV(PIND6)) != 0)
 
 // data buffer length
 #define BITBUF_LEN 70
@@ -333,7 +334,12 @@ void RFIDInit()
  * @brief	Read bit from RFID tag
  * 
  * @return 	int, read bit value or -1 if timeout is exceeded.
- *
+ *{
+	char val=0;
+	RfIsSet(val);
+	return val;
+}
+
  */
 unsigned char RFIDGetBit()
 {
@@ -574,15 +580,16 @@ void StateMachine()
 		case RS_SYNC:
 		{
 			KBDParse();
-			
-			if(RF_DEMOD) rfState = RS_H;
+			LED_OK_CLR();
+			if(!RF_DEMOD) rfState = RS_H;
 			break;
 		}
 		case RS_H:
-			if(!RF_DEMOD) rfState = RS_L;
+			if(RF_DEMOD) rfState = RS_L;
 			break;
 		case RS_L:
-			if(RF_DEMOD)
+			
+			if(!RF_DEMOD)
 			{
 				rfState = RS_SHORT;
 				count = 0;
@@ -593,7 +600,7 @@ void StateMachine()
 		{
 			if(count > RFID_SHORT)
 			{
-				if(RF_DEMOD)
+				if(!RF_DEMOD)
 				{
 					rfState = RS_LONG;
 				}
@@ -625,19 +632,25 @@ void StateMachine()
 		
 		case RS_PREAMB:
 		{
-			unsigned char bit = RFIDGetBit();
-			if(1 == bit)
-				++bitCnt;
-			else if(-1 == bit)
+			unsigned char bit = RF_DEMOD;
+			if(count > RFID_SHORT)
 			{
-				rfState = RS_SYNC;
-				LED_OK_SET();
+				if(0 == bit)
+				{
+					++bitCnt;
+					count = 0;
+				}
+				else
+				{
+					rfState = RS_SYNC;
+				}
 			}
 			
 			if(RF_HEADER_BITCNT == bitCnt)
 			{
 				bitCnt = 0;
-				RFIDReadTag(bitBuf);
+				count = 0;
+				//RFIDReadTag(bitBuf);
 				rfState = RS_DECODE;
 			}
 			break;
@@ -645,6 +658,8 @@ void StateMachine()
 		
 		case RS_DECODE:
 		{
+			LED_OK_SET();
+			_delay_ms(100);
 			//RFIDDecode(bitBuf);
 			
 			printf("READED: ");
@@ -660,7 +675,7 @@ void StateMachine()
 		}
 
 		default:
-			rfState = RS_SYNC;	
+			rfState = RS_SYNC;
 	}
 	//printf("SM Leave %i. \n", count);
 }
