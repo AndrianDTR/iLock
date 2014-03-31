@@ -1,3 +1,6 @@
+/*
+ * 
+ */
 #include <avr/io.h> 
 #include <avr/interrupt.h> 
 
@@ -330,17 +333,60 @@ void RFIDInit()
 	OCR0 = 73; 
 }
 
+char RFIDRead5Bit()
+{
+	char system = 0;
+	
+	count = 0;
+	bitCnt = 5;
+	
+	do{
+		if(count > 96)
+		{
+			if(RF_DEMOD)
+			{
+				system = (system << 1) | 1;
+		
+				do{
+					if(count > 144)
+					{
+						return 0;
+					}
+				}
+				while(RF_DEMOD);
+				count = 0;
+			}
+			else
+			{
+				system <<= 1;
+				
+				do{
+					if(count > 144)
+					{
+						return 0;
+					}
+				}while(!RF_DEMOD);
+				count = 0;
+			}
+		}
+	}while(--bitCnt);
+	
+	system >>= 1;
+		
+	return system;
+}
+
 /*
  * @brief	Read bit from RFID tag
  * 
  * @return 	int, read bit value or -1 if timeout is exceeded.
  *
  */
-unsigned char RFIDGetBit()
+unsigned char RFIDReadByte()
 {
 	unsigned char value = RF_DEMOD;
 	count = 0;
-
+	
 	do
 	{
 		if(count > RFID_SHORT && value != RF_DEMOD)
@@ -385,7 +431,7 @@ char RFIDReadTag(unsigned char* p)
 				else
 				{
 					if(RF_DEMOD)
-						break;BITBUF_LEN
+						break;
 					*p = 3;
 					readState = 6;
 				}
@@ -574,7 +620,7 @@ void StateMachine()
 		case RS_SYNC:
 		{
 			KBDParse();
-			LED_OK_CLR();
+			
 			if(!RF_DEMOD) rfState = RS_H;
 			break;
 		}
@@ -642,7 +688,13 @@ void StateMachine()
 			
 			if(RF_HEADER_BITCNT == bitCnt)
 			{
+				
+				LED_OK_SET();
 				RFIDReadTag(bitBuf);
+
+				_delay_ms(100);
+				LED_OK_CLR();
+			
 				rfState = RS_DECODE;
 			}
 			break;
@@ -650,8 +702,6 @@ void StateMachine()
 		
 		case RS_DECODE:
 		{
-			LED_OK_SET();
-			_delay_ms(100);
 			//RFIDDecode(bitBuf);
 			
 			printf("READED: ");
